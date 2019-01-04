@@ -17,4 +17,4 @@ def get_Frends_list():
 
 
 frends_list=get_Frends_list()
-print(frends_list)
+print('frends_list:',frends_list)

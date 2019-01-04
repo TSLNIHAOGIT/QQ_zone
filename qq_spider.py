@@ -6,9 +6,24 @@ import os
 from urllib import parse
 import configparser
 
+#找到返回结果的json文件，而不是获取网页源代码后用正则表达式处理的
+
+
 class Spider(object):
     def __init__(self):
-        self.web=webdriver.Chrome()
+        options = webdriver.ChromeOptions()
+        #   设置无图模式
+        prefs = {
+            'profile.default_content_setting_values': {
+                'images': 2
+            }
+        }
+        # options.add_argument('--headless')  # 浏览器隐藏
+        options.add_argument('disable-infobars')  # 去除显示受控制
+        options.add_argument('--disable-gpu')
+        options.add_experimental_option('prefs', prefs)  # 设置无图模式
+
+        self.web=webdriver.Chrome(chrome_options=options,executable_path='/Users/ozintel/Downloads/Tsl_python_progect/znfw_project/znfw_crawer/simulation_browser_crawer/chromedriver')
         self.web.get('https://user.qzone.qq.com')
         config = configparser.ConfigParser(allow_no_value=False)
         config.read('userinfo.ini')
@@ -28,7 +43,7 @@ class Spider(object):
     
 
     def login(self):
-        self.web.switch_to_frame('login_frame')
+        self.web.switch_to.frame('login_frame')
         log=self.web.find_element_by_id("switcher_plogin")
         log.click()
         time.sleep(1)
@@ -48,8 +63,8 @@ class Spider(object):
         self.get_g_tk()
         self.headers['Cookie']=self.cookies
         self.web.quit()
-        
-    
+
+
     def get_frends_url(self):
         url='https://h5.qzone.qq.com/proxy/domain/base.qzone.qq.com/cgi-bin/right/get_entryuinlist.cgi?'
         params = {"uin": self.__username,
@@ -57,9 +72,11 @@ class Spider(object):
               "action": 1,
               "g_tk": self.g_tk}
         url = url + parse.urlencode(params)
+        print('url',url)
         return url
 
     def get_frends_num(self):
+        print('start get_frends_num')
         t=True
         offset=0
         url=self.get_frends_url()
@@ -75,6 +92,7 @@ class Spider(object):
                 with open('./frends/'+str(offset)+'.json','w',encoding='utf-8') as w:
                     w.write(page.text)
                 offset += 50
+
 
     def get_mood_url(self):
         url='https://h5.qzone.qq.com/proxy/domain/taotao.qq.com/cgi-bin/emotion_cgi_msglist_v6?'
@@ -97,10 +115,12 @@ class Spider(object):
         return url
 
 
+
     def get_mood_detail(self):
+        print('start get_mood_detail')
         from getFrends import frends_list
         url = self.get_mood_url()
-        for u in frends_list[245:]:
+        for u in frends_list:#
             t = True
             QQ_number=u['data']
             url_ = url + '&uin=' + str(QQ_number)
@@ -108,7 +128,7 @@ class Spider(object):
             while (t):
                 url__ = url_ + '&pos=' + str(pos)
                 mood_detail = self.req.get(url=url__, headers=self.headers)
-                print(QQ_number,u['label'],pos)
+                print('QQ_number',QQ_number,u['label'],pos)
                 if "\"msglist\":null" in mood_detail.text or "\"message\":\"对不起,主人设置了保密,您没有权限查看\"" in mood_detail.text:
                     t = False
                 else:
@@ -138,4 +158,4 @@ if __name__=='__main__':
     sp.login()
     sp.get_frends_num()
     sp.get_mood_detail()
-    from data_analys import dataToExcel
+    # from data_analys import dataToExcel
